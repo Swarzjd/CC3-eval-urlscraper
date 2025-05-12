@@ -7,7 +7,7 @@ import aiohttp
 import asyncio
 import feedparser
 
-class ScarperUrl:
+class ScraperUrl:
     def __init__(self):
         self.soup_class = bs4.BeautifulSoup(features="html.parser")
 
@@ -98,8 +98,9 @@ async def search(parsed:list[dict])->list:
     return results
 
 if __name__ == "__main__":
-    scraper = ScarperUrl()
-    searcher = Searcher("guerre","ukraine","russie")
+    scraper = ScraperUrl()
+    searcher = Searcher("nutella")
+    start = time.time()
     list_urls = scraper.load_url("rss_list.txt")
     results_parsing = asyncio.run(main())
 
@@ -122,5 +123,7 @@ if __name__ == "__main__":
         for value in least:
             if value:
                 f.write(f"{value[0]}\n")
+    end = time.time()
+    print(f"execution time : {end - start} seconds")
 
     print("Résultats enregistrés dans resultats.txt")
