@@ -62,29 +62,65 @@ class Searcher:
         self.keyword2 = keyword_2
         self.keyword3 = keyword_3
 
-    def search_in_article(self, article:dict):
+    @staticmethod
+    def keyword_evaluator(keyword:str, article:dict)->bool:
+        return keyword in article["title"].lower() or keyword in article["summary"].lower()
+
+    async def search_in_article(self, article:dict):
         best_search = []
         second_best = []
         third_best = []
-        if self.keyword.lower() in article["title"].lower() or self.keyword.lower() in article["summary"].lower() and self.keyword2.lower() in article["title"].lower() or self.keyword2.lower() in article["summary"].lower() and self.keyword3.lower() in article["title"].lower() or self.keyword3.lower() in article["summary"].lower():
-            best_search.append({"title": article["title"],"publishTime":article["published"],"link":article["link"],"keywords":[self.keyword,self.keyword2,self.keyword3]})
+        count = 0
+        keywords_matched = []
 
+        for kw in [self.keyword, self.keyword2, self.keyword3]:
+            if kw is None:
+                continue
+            if self.keyword_evaluator(kw, article):
+                count += 1
+                keywords_matched.append(kw)
+        if count == 1 :
+            third_best.append(f"title : {article['title']}, link : {article['link']}, published : {article['published']}, keyword : {keywords_matched}")
+        if 1 < count < 3:
+            second_best.append(f"title : {article['title']},link : {article['link']}, published : {article['published']},keyword : {keywords_matched}")
+        if count == 3:
+            best_search.append(f"title : {article['title']},link : {article['link']}, published : {article['published']},keyword : {keywords_matched}")
+        return best_search, second_best, third_best
 
 async def main():
     tasks = [scraper.process_url(url) for url in list_urls]
     results: list = await asyncio.gather(*tasks)
     return results
 
-async def search(parsed:list[dict])->None:
+async def search(parsed:list[dict])->list:
     tasks = [searcher.search_in_article(text) for text in parsed]
+    results = await asyncio.gather(*tasks)
+    return results
 
 if __name__ == "__main__":
     scraper = ScarperUrl()
-    searcher = Searcher("guerre")
+    searcher = Searcher("guerre","ukraine","russie")
     list_urls = scraper.load_url("rss_list.txt")
     results_parsing = asyncio.run(main())
-    print(results_parsing)
-    print(type(results_parsing))
-    with open("results.txt", "w",encoding="utf-16") as f:
-        f.write(f"Results : {results_parsing[0]}\n")
 
+    with open("resultats.txt", "w", encoding="utf-16") as f:
+        best = []
+        second = []
+        least = []
+        results_search = asyncio.run(search(results_parsing[0]))
+        if results_search:
+            for evaluation in results_search:
+                best.append(evaluation[0])
+                second.append(evaluation[1])
+                least.append(evaluation[2])
+        for value in best:
+            if value:
+                f.write(f"{value[0]}\n")
+        for value in second:
+            if value:
+                f.write(f"{value[0]}\n")
+        for value in least:
+            if value:
+                f.write(f"{value[0]}\n")
+
+    print("Résultats enregistrés dans resultats.txt")
